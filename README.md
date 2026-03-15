@@ -3,12 +3,20 @@
 ## Problem
 This project focuses on coal mine seismic hazard classification using machine learning. The goal is to predict whether the next 8-hour shift will be hazardous based on seismic and seismoacoustic activity.
 
+## What We Are Trying to Find
+For each 8-hour shift, we estimate the probability that the **next shift** will have a high-energy seismic bump (hazardous event).
+
+- Input: shift-level monitoring features (hazard assessment, pulse counts, bump counts by energy range, total/max energy, etc.)
+- Output: `hazardous` vs `non-hazardous` prediction, plus risk probability for early warning support
+- Practical goal: reduce missed hazardous shifts by prioritizing recall/F2 on the hazardous class
+
 - **Dataset**: UCI Seismic Bumps, 2,584 shifts, 18 features.
 - **Class Imbalance**: 93.4% non-hazardous, 6.6% hazardous (14.2:1 ratio).
 - **Metric Priority**: Recall and F2 score are prioritized over accuracy. In a safety-critical context, missing a dangerous shift (False Negative) is significantly worse than a false alarm (False Positive).
 
 ## Dataset
 The data is sourced from the UCI ML Repository in ARFF format. Features include:
+- **Geographic Origin**: Coal mines in **Poland** (UCI Seismic Bumps source domain).
 - **Categorical (Ordinal)**: seismic, seismoacoustic, ghazard (mapped to {a:0, b:1, c:2, d:3}).
 - **Categorical (Binary)**: shift (mapped to {N:0, W:1}).
 - **Numeric**: energy, maxenergy, and various bump counts (nbumps, nbumps2, etc.).
@@ -47,6 +55,22 @@ We tested four strategies (default, class_weight_balanced, smote, smote_balanced
 ## Why Not Accuracy?
 A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy but would fail to detect any hazards. Our selected Logistic Regression model has lower accuracy (83%) but successfully identifies 57.7% of hazardous shifts. The F2 score specifically penalizes missed hazards more heavily than false alarms.
 
+## Relevant Graphs
+
+### 1) Final Policy Diagnostics
+
+![Final Policy Diagnostics](reports/figures/final_policy_diagnostics.png)
+
+- **Left panel (Lockbox Probability Distribution):** shows how predicted hazardous probabilities are distributed for actual hazardous and non-hazardous shifts, with the frozen dangerous threshold (`0.512`) as a vertical decision line.
+- **Right panel (F2 Stability Check):** compares Dev F2, CV mean F2, and Lockbox F2 to inspect generalization stability and overfitting risk.
+
+### 2) Danger Level Trend
+
+![Danger Level Trend](reports/figures/danger_level_trend.png)
+
+- **Left panel:** count of shifts classified as `low`, `watch`, and `dangerous` under the frozen policy.
+- **Right panel:** percentage share of each risk level, helping operations estimate expected alert volume.
+
 ## Reproducing
 To run the full pipeline:
 ```bash
@@ -68,4 +92,3 @@ python3 scripts/run_imbalance_experiments.py
 - `docs/`: Conceptual documentation and diagrams.
 - `scripts/`: Python scripts for running the pipeline.
 - `src/`: Modular code for loading, preprocessing, splitting, and training.
-
