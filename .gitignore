@@ -6,3 +6,12 @@ dist/
 .venv/
 reports/figures/*.png
 artifacts/*.csv
+
+# Local AI design/tooling skill folders (impeccable et al.) - not app code
+.agents/
+.claude/
+.cursor/
+.gemini/
+.kiro/
+.opencode/
+.qoder/

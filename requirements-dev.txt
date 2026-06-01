@@ -1,0 +1,11 @@
+# Development / training / evaluation dependencies.
+# Not needed to run the Streamlit demo (see requirements.txt). Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+-r requirements.txt
+
+xgboost==2.0.3
+imbalanced-learn>=0.11
+matplotlib>=3.7
+seaborn>=0.12
+scipy>=1.11
+pytest>=7.0

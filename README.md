@@ -71,8 +71,45 @@ A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy 
 - **Left panel:** count of shifts classified as `low`, `watch`, and `dangerous` under the frozen policy.
 - **Right panel:** percentage share of each risk level, helping operations estimate expected alert volume.
 
+## Web App Demo
+
+`Seismic Risk Console` is a Streamlit demo for the frozen final policy. It supports:
+
+- Single-shift scoring through a guided form
+- Batch CSV scoring with downloadable predictions
+- Model evidence for the selected threshold, recall, F2, and AUC
+- A methodology view explaining dataset limits and safety-focused metrics
+
+Run locally (app only):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+`requirements.txt` is the lean runtime set (Streamlit, pandas, numpy, scikit-learn).
+The frozen model bundle is pure scikit-learn, so the demo needs nothing heavier.
+
+For training, evaluation, and tests, also install the dev tooling:
+
+```bash
+pip install -r requirements-dev.txt   # includes requirements.txt + xgboost, matplotlib, etc.
+```
+
+### Deploying to Streamlit Community Cloud
+
+1. Push this repo to GitHub.
+2. On [share.streamlit.io](https://share.streamlit.io), create an app pointing at this repo.
+3. Set the entrypoint to `streamlit_app.py`. The platform installs `requirements.txt` automatically.
+
+Streamlit is a long-running Python server, so it is **not** a fit for static or serverless
+hosts like Vercel/Netlify. Use Streamlit Community Cloud (above) or any host that runs a
+persistent process (Render, Railway, Fly.io, Hugging Face Spaces).
+
 ## Reproducing
-To run the full pipeline:
+Install the dev dependencies first (`pip install -r requirements-dev.txt`), then run the full pipeline:
 ```bash
 # Run Exploratory Data Analysis
 python3 scripts/run_eda.py

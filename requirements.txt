@@ -1,9 +1,11 @@
-pandas>=2.0
-numpy>=1.24
-scikit-learn>=1.3
-xgboost>=2.0
-imbalanced-learn>=0.11
-matplotlib>=3.7
-seaborn>=0.12
-scipy>=1.11
-pytest>=7.0
+# Runtime dependencies for the Streamlit demo (deploy target: Streamlit Community Cloud).
+# The frozen model bundle is pure scikit-learn (LogisticRegression + ColumnTransformer),
+# so the app needs only these packages. Training/eval tooling lives in
+# requirements-dev.txt and is intentionally excluded here to keep the build lean.
+#
+# Versions are pinned to the set the app was tested against, so the cloud build
+# reproduces a known-good environment (avoids silent breakage when pandas/numpy bump).
+streamlit==1.58.0
+pandas==3.0.3
+numpy==2.4.6
+scikit-learn==1.8.0
