@@ -73,6 +73,8 @@ A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy 
 
 ## Web App Demo
 
+**Live app: [coalmine-seismic-risk.streamlit.app](https://coalmine-seismic-risk.streamlit.app/)**
+
 `Seismic Risk Console` is a Streamlit demo for the frozen final policy. It supports:
 
 - Single-shift scoring through a guided form
@@ -101,8 +103,8 @@ pip install -r requirements-dev.txt   # includes requirements.txt + xgboost, mat
 ### Deploying to Streamlit Community Cloud
 
 1. Push this repo to GitHub.
-2. On [share.streamlit.io](https://share.streamlit.io), create an app pointing at this repo.
-3. Set the entrypoint to `streamlit_app.py`. The platform installs `requirements.txt` automatically.
+2. On [share.streamlit.io](https://share.streamlit.io), create an app pointing at this repo (branch `master`).
+3. Set the entrypoint to `streamlit_app.py` and the subdomain to `coalmine-seismic-risk`. The platform installs `requirements.txt` automatically.
 
 Streamlit is a long-running Python server, so it is **not** a fit for static or serverless
 hosts like Vercel/Netlify. Use Streamlit Community Cloud (above) or any host that runs a
