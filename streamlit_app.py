@@ -12,6 +12,7 @@ from src.app.scoring import (
     CATEGORICAL_OPTIONS,
     DEFAULT_SAMPLE_INPUT_PATH,
     NUMERIC_COLUMNS,
+    PREDICTION_COLUMNS,
     ScoringInputError,
     load_model_bundle,
     load_required_columns,
@@ -25,6 +26,9 @@ ROOT = Path(__file__).resolve().parent
 POLICY_PATH = ROOT / "artifacts" / "final_policy" / "final_policy.json"
 DIAGNOSTICS_PATH = ROOT / "reports" / "figures" / "final_policy_diagnostics.png"
 TREND_PATH = ROOT / "reports" / "figures" / "danger_level_trend.png"
+RELIABILITY_PATH = ROOT / "reports" / "figures" / "calibration_reliability.png"
+METRIC_CIS_PATH = ROOT / "artifacts" / "final_policy" / "lockbox_metric_cis.csv"
+CALIBRATION_SUMMARY_PATH = ROOT / "artifacts" / "final_policy" / "calibration_summary.csv"
 
 CATEGORICAL_LABELS = {
     "seismic": "Seismic assessment",
@@ -84,7 +88,7 @@ NUMERIC_GROUPS = (
 
 st.set_page_config(
     page_title="Seismic Risk Console",
-    page_icon="",
+    page_icon=":material/earthquake:",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -101,6 +105,20 @@ def get_policy() -> dict:
 
 
 @st.cache_data(show_spinner=False)
+def get_metric_cis() -> pd.DataFrame | None:
+    if not METRIC_CIS_PATH.exists():
+        return None
+    return pd.read_csv(METRIC_CIS_PATH)
+
+
+@st.cache_data(show_spinner=False)
+def get_calibration_summary() -> pd.DataFrame | None:
+    if not CALIBRATION_SUMMARY_PATH.exists():
+        return None
+    return pd.read_csv(CALIBRATION_SUMMARY_PATH)
+
+
+@st.cache_data(show_spinner=False)
 def get_sample_input() -> pd.DataFrame:
     return load_sample_input()
 
@@ -114,6 +132,7 @@ def inject_styles() -> None:
     st.markdown(
         """
         <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
         :root {
           --sr-bg: #201d1d;
           --sr-surface: #302c2c;
@@ -130,9 +149,15 @@ def inject_styles() -> None:
           --sr-step: 150ms;
           --sr-ease: cubic-bezier(0.22, 1, 0.36, 1);
           /* z-index scale */
+          --z-grain: 40;
+          --z-scanline: 50;
           --z-sticky: 100;
           --z-overlay: 200;
           --z-tooltip: 300;
+          /* tactical telemetry */
+          --sr-display: "Space Grotesk", "Archivo", ui-sans-serif, system-ui, sans-serif;
+          --sr-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          --sr-tick: var(--sr-border-strong);
         }
 
         .stApp {
@@ -445,6 +470,226 @@ def inject_styles() -> None:
           .sr-step { border-left: 0; border-top: 1px solid var(--sr-border); }
           .sr-step:first-child { border-top: 0; }
         }
+
+        /* ---- Tactical overlays: scanlines + grain (pointer-safe) ---- */
+        .stApp::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: var(--z-scanline);
+          background: repeating-linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.13) 0px,
+            rgba(0, 0, 0, 0.13) 1px,
+            transparent 1px,
+            transparent 3px
+          );
+          opacity: 0.16;
+        }
+
+        .stApp::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: var(--z-grain);
+          opacity: 0.05;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+          .stApp::before { animation: sr-scan 9s linear infinite; }
+        }
+        @keyframes sr-scan {
+          from { background-position-y: 0; }
+          to { background-position-y: 3px; }
+        }
+
+        /* ---- Crosshair corner framing ---- */
+        .sr-crosshair { position: relative; }
+        .sr-crosshair::after {
+          content: "";
+          position: absolute;
+          inset: 7px;
+          pointer-events: none;
+          background:
+            linear-gradient(var(--sr-tick), var(--sr-tick)) left top / 12px 1px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) left top / 1px 12px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) right top / 12px 1px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) right top / 1px 12px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) left bottom / 12px 1px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) left bottom / 1px 12px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) right bottom / 12px 1px no-repeat,
+            linear-gradient(var(--sr-tick), var(--sr-tick)) right bottom / 1px 12px no-repeat;
+        }
+
+        /* ---- Risk-result hero ---- */
+        .sr-readout {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: 26px;
+          align-items: center;
+          border: 1px solid var(--sr-border);
+          border-radius: 8px;
+          background:
+            radial-gradient(130% 130% at 0% 0%, rgba(47, 147, 255, 0.05), transparent 55%),
+            var(--sr-surface-2);
+          padding: 24px 26px;
+          margin: 6px 0 14px;
+        }
+
+        .sr-gauge {
+          --val: 0;
+          --ring: var(--sr-faint);
+          position: relative;
+          width: 152px;
+          height: 152px;
+          border-radius: 999px;
+          background: conic-gradient(
+            var(--ring) calc(var(--val) * 1%),
+            rgba(253, 252, 252, 0.07) 0
+          );
+          display: grid;
+          place-items: center;
+          flex: none;
+        }
+        .sr-gauge::before {
+          content: "";
+          position: absolute;
+          inset: 13px;
+          border-radius: 999px;
+          background: var(--sr-bg);
+          border: 1px solid var(--sr-border);
+        }
+        .sr-gauge-inner { position: relative; text-align: center; line-height: 1; }
+        .sr-gauge-val {
+          font-family: var(--sr-display);
+          font-size: 3.05rem;
+          font-weight: 700;
+          color: var(--sr-text);
+          font-variant-numeric: tabular-nums;
+          text-shadow: 0 0 18px var(--ring);
+        }
+        .sr-gauge-unit {
+          display: block;
+          margin-top: 5px;
+          font-size: 0.64rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--sr-faint);
+        }
+
+        .sr-verdict-eyebrow {
+          font-size: 0.72rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--sr-faint);
+          margin-bottom: 10px;
+        }
+        .sr-verdict-text {
+          color: var(--sr-text);
+          font-size: 1.02rem;
+          line-height: 1.5;
+          max-width: 54ch;
+          margin: 12px 0 0;
+        }
+
+        /* ---- Telemetry readouts ---- */
+        .sr-telemetry { display: flex; flex-wrap: wrap; gap: 10px 30px; margin-top: 16px; }
+        .sr-readout-field { line-height: 1.3; }
+        .sr-readout-field .k {
+          display: block;
+          font-size: 0.64rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--sr-faint);
+        }
+        .sr-readout-field .v {
+          font-family: var(--sr-mono);
+          font-size: 1.02rem;
+          color: var(--sr-text);
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* ---- Risk-level tiles + allocation bar ---- */
+        .sr-tiles {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin: 4px 0 10px;
+        }
+        .sr-tile {
+          border: 1px solid var(--sr-border);
+          border-radius: 6px;
+          background: var(--sr-surface-2);
+          padding: 14px 16px;
+        }
+        .sr-tile .k {
+          font-size: 0.64rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--sr-faint);
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .sr-tile .k::before {
+          content: "";
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: currentColor;
+          box-shadow: 0 0 8px currentColor;
+        }
+        .sr-tile .v {
+          font-family: var(--sr-display);
+          font-size: 1.85rem;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          color: var(--sr-text);
+          margin-top: 6px;
+        }
+        .sr-tile.low .k { color: var(--sr-green); }
+        .sr-tile.watch .k { color: var(--sr-orange); }
+        .sr-tile.dangerous .k { color: var(--sr-red); }
+
+        .sr-alloc {
+          display: flex;
+          height: 8px;
+          border-radius: 999px;
+          overflow: hidden;
+          border: 1px solid var(--sr-border);
+          margin: 2px 0 16px;
+          background: var(--sr-surface-2);
+        }
+        .sr-alloc i { display: block; height: 100%; }
+        .sr-alloc i.low { background: var(--sr-green); }
+        .sr-alloc i.watch { background: var(--sr-orange); }
+        .sr-alloc i.dangerous { background: var(--sr-red); }
+
+        /* ---- Awaiting-upload empty state ---- */
+        .sr-empty {
+          border: 1px dashed var(--sr-border-strong);
+          border-radius: 8px;
+          padding: 28px 24px;
+          color: var(--sr-muted);
+          background: var(--sr-surface-2);
+        }
+        .sr-empty .sr-empty-title {
+          color: var(--sr-text);
+          font-size: 1rem;
+          margin-bottom: 6px;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+
+        @media (max-width: 820px) {
+          .sr-readout { grid-template-columns: 1fr; gap: 16px; }
+          .sr-gauge { width: 128px; height: 128px; }
+          .sr-gauge-val { font-size: 2.6rem; }
+          .sr-tiles { grid-template-columns: 1fr; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -465,7 +710,7 @@ def render_header(policy: dict) -> None:
     lockbox = policy["lockbox_metrics"]
     st.markdown(
         f"""
-        <div class="sr-frame">
+        <div class="sr-frame sr-crosshair">
           <div class="sr-console-title">
             <div>
               <div class="sr-eyebrow">Frozen policy console</div>
@@ -534,8 +779,11 @@ def select_sample_row(samples: pd.DataFrame) -> tuple[int, pd.Series]:
 
 
 def build_manual_feature_row(sample: pd.Series, sample_index: int) -> pd.DataFrame:
-    st.subheader("Score one shift")
-    st.caption("Score updates from the selected example values and edited fields.")
+    st.markdown("##### Monitoring inputs")
+    st.caption(
+        "Categorical assessments are shown below; expand the panel to fine-tune the "
+        "numeric signals. The console above updates as you edit."
+    )
 
     categorical_cols = st.columns(4)
     categorical_values = {}
@@ -550,18 +798,19 @@ def build_manual_feature_row(sample: pd.Series, sample_index: int) -> pd.DataFra
         )
 
     numeric_values = {}
-    for group_name, columns in NUMERIC_GROUPS:
-        st.markdown(f"##### {group_name}")
-        cols = st.columns(4)
-        for offset, column in enumerate(columns):
-            numeric_values[column] = cols[offset].number_input(
-                f"{NUMERIC_LABELS[column]} ({column})",
-                value=float(sample[column]),
-                step=1.0,
-                format="%.3f",
-                help=NUMERIC_HELP[column],
-                key=f"input_{sample_index}_{column}",
-            )
+    with st.expander("Adjust monitoring inputs", expanded=False):
+        for group_name, columns in NUMERIC_GROUPS:
+            st.markdown(f"###### {group_name}")
+            cols = st.columns(4)
+            for offset, column in enumerate(columns):
+                numeric_values[column] = cols[offset].number_input(
+                    f"{NUMERIC_LABELS[column]} ({column})",
+                    value=float(sample[column]),
+                    step=1.0,
+                    format="%.3f",
+                    help=NUMERIC_HELP[column],
+                    key=f"input_{sample_index}_{column}",
+                )
 
     row = {**categorical_values, **numeric_values}
     ordered_row = {column: row[column] for column in get_required_columns()}
@@ -569,42 +818,84 @@ def build_manual_feature_row(sample: pd.Series, sample_index: int) -> pd.DataFra
 
 
 def render_single_score(bundle: dict) -> None:
-    st.info(
-        "Use this tab when you want to test one shift manually. The current result "
-        "appears below the input fields."
+    st.caption(
+        "Pick an example shift, then read the live risk console. Expand the inputs "
+        "below to tune the monitoring signals."
     )
     sample_index, sample = select_sample_row(get_sample_input())
+    result_slot = st.container()
     features = build_manual_feature_row(sample, sample_index)
 
     try:
         prediction = score_features(features, bundle)
     except ScoringInputError as exc:
-        st.error(str(exc))
+        result_slot.error(str(exc))
         return
 
+    threshold = float(bundle["threshold"])
+    watch_floor = float(bundle.get("watch_floor", 0.04))
     result = prediction.iloc[0]
-    st.markdown("#### Current shift score")
-    st.caption(
-        "Read this section after changing fields. Risk score is 0-100, risk level "
-        "is the human-readable alert band, and dangerous flag is 1 only when the "
-        "frozen threshold is crossed."
-    )
-    left, right = st.columns([1, 2])
-    left.metric("Risk score", f"{int(result['risk_score'])}/100")
-    left.markdown(risk_badge(result["risk_level"]), unsafe_allow_html=True)
-    right.dataframe(
-        prediction.loc[
-            :,
-            [
-                "predicted_probability",
-                "risk_score",
-                "risk_level",
-                "dangerous_flag",
-            ],
-        ],
-        width="stretch",
-        hide_index=True,
-    )
+    level = str(result["risk_level"]).lower()
+    score = int(result["risk_score"])
+    probability = float(result["predicted_probability"])
+    flag = int(result["dangerous_flag"])
+    ring = {
+        "low": "var(--sr-green)",
+        "watch": "var(--sr-orange)",
+        "dangerous": "var(--sr-red)",
+    }.get(level, "var(--sr-faint)")
+
+    if level == "dangerous":
+        verdict = (
+            f"Hazardous shift predicted. The calibrated probability {probability:.2f} "
+            f"is at or above the {threshold:.3f} alert threshold — treat as an "
+            "actionable hazard alert."
+        )
+    elif level == "watch":
+        verdict = (
+            f"Elevated but sub-threshold. Probability {probability:.2f} sits in the "
+            f"watch band ({watch_floor:.2f}-{threshold:.3f}) — heightened monitoring, "
+            "not yet an alert."
+        )
+    else:
+        verdict = (
+            f"Baseline conditions. Probability {probability:.2f} is below the "
+            f"{watch_floor:.2f} watch floor."
+        )
+
+    with result_slot:
+        st.markdown(
+            f"""
+            <div class="sr-readout sr-crosshair">
+              <div class="sr-gauge" style="--val: {score}; --ring: {ring};">
+                <div class="sr-gauge-inner">
+                  <span class="sr-gauge-val">{score}</span>
+                  <span class="sr-gauge-unit">risk / 100</span>
+                </div>
+              </div>
+              <div>
+                <div class="sr-verdict-eyebrow">Shift assessment</div>
+                {risk_badge(level)}
+                <p class="sr-verdict-text">{verdict}</p>
+                <div class="sr-telemetry">
+                  <div class="sr-readout-field"><span class="k">probability</span>
+                    <span class="v">{probability:.3f}</span></div>
+                  <div class="sr-readout-field"><span class="k">alert threshold</span>
+                    <span class="v">{threshold:.3f}</span></div>
+                  <div class="sr-readout-field"><span class="k">dangerous flag</span>
+                    <span class="v">{flag}</span></div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        with st.expander("Raw output"):
+            st.dataframe(
+                prediction.loc[:, list(PREDICTION_COLUMNS)],
+                width="stretch",
+                hide_index=True,
+            )
 
 
 def render_batch_score(bundle: dict) -> None:
@@ -653,8 +944,18 @@ def render_batch_score(bundle: dict) -> None:
 
     uploaded = st.file_uploader("Upload shift feature CSV", type=["csv"])
     if uploaded is None:
-        st.dataframe(get_sample_input().head(3), width="stretch", hide_index=True)
-        st.caption("Preview of the expected upload format.")
+        st.markdown(
+            """
+            <div class="sr-empty sr-crosshair">
+              <div class="sr-empty-title">Awaiting upload</div>
+              Download the template, keep the header row, replace the shift rows, then
+              upload here to score the whole batch at once.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        with st.expander("Preview expected format"):
+            st.dataframe(get_sample_input().head(3), width="stretch", hide_index=True)
         return
 
     try:
@@ -665,10 +966,25 @@ def render_batch_score(bundle: dict) -> None:
         return
 
     summary = prediction_summary(predictions)
-    summary_cols = st.columns(3)
-    summary_cols[0].metric("Low", summary["low"])
-    summary_cols[1].metric("Watch", summary["watch"])
-    summary_cols[2].metric("Dangerous", summary["dangerous"])
+    total = max(summary["low"] + summary["watch"] + summary["dangerous"], 1)
+    st.markdown(
+        f"""
+        <div class="sr-tiles">
+          <div class="sr-tile low"><div class="k">low</div>
+            <div class="v">{summary["low"]}</div></div>
+          <div class="sr-tile watch"><div class="k">watch</div>
+            <div class="v">{summary["watch"]}</div></div>
+          <div class="sr-tile dangerous"><div class="k">dangerous</div>
+            <div class="v">{summary["dangerous"]}</div></div>
+        </div>
+        <div class="sr-alloc">
+          <i class="low" style="width: {summary["low"] / total * 100:.1f}%"></i>
+          <i class="watch" style="width: {summary["watch"] / total * 100:.1f}%"></i>
+          <i class="dangerous" style="width: {summary["dangerous"] / total * 100:.1f}%"></i>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.caption(
         "The table below is your original CSV plus prediction columns. Download it "
         "when you want to keep or share the scored results."
@@ -721,6 +1037,8 @@ def render_model_evidence(policy: dict) -> None:
 
 def render_methodology(policy: dict) -> None:
     st.subheader("Methodology")
+    watch_floor = float(policy.get("watch_floor", 0.30))
+    threshold = float(policy["operating_threshold"])
     st.markdown(
         f"""
         - Dataset: UCI Seismic Bumps, 2,584 shift records and 18 features.
@@ -728,12 +1046,67 @@ def render_methodology(policy: dict) -> None:
         - Class balance: about 6.6% hazardous, so accuracy is not the main metric.
         - Model: `{policy["model"]}` with `{policy["hyperparams"]["class_weight"]}` class weighting.
         - Decision rule: `{policy["danger_rule"]}`.
-        - Risk levels: `low` below 0.30, `watch` from 0.30 to threshold, `dangerous` at threshold or above.
+        - Risk levels: `low` below {watch_floor:.2f}, `watch` from {watch_floor:.2f} to
+          {threshold:.3f}, `dangerous` at {threshold:.3f} or above.
 
         Limitation: the source dataset has no explicit timestamps, so the original
         model uses stratified splits rather than true temporal validation.
         """
     )
+
+    st.markdown("#### Calibration & cost policy")
+    calibration = get_calibration_summary()
+    if calibration is not None and not calibration.empty:
+        rows = calibration.set_index("stage")
+        improved = ""
+        if {"uncalibrated", "calibrated"}.issubset(rows.index):
+            before = float(rows.loc["uncalibrated", "brier"])
+            after = float(rows.loc["calibrated", "brier"])
+            improved = (
+                f" Brier score improves from {before:.3f} to {after:.3f} "
+                "(lower is better)."
+            )
+        method = get_bundle().get("calibration_method", "isotonic")
+        st.markdown(
+            f"Predicted probabilities are calibrated (`{method}`), so the 0-100 risk "
+            f"score approximates real hazard frequency rather than the raw, "
+            f"class-weight-distorted output.{improved}"
+        )
+    else:
+        st.caption(
+            "Run `scripts/evaluate_calibration.py` to generate calibration diagnostics."
+        )
+
+    if "cost_matrix" in policy:
+        cost = policy["cost_matrix"]
+        st.markdown(
+            f"The operating threshold follows an explicit cost assumption: a missed "
+            f"hazard costs `{cost['ratio']:.0f}x` a false alarm "
+            f"(FN={cost['fn']:.0f}, FP={cost['fp']:.0f}). Cost-optimal threshold on "
+            f"dev out-of-fold scores: `{policy.get('cost_optimal_threshold', float('nan')):.3f}`; "
+            f"active basis: `{policy.get('threshold_basis', 'f2')}`."
+        )
+
+    cis = get_metric_cis()
+    if cis is not None and not cis.empty:
+        st.markdown("#### Lockbox metrics with 95% confidence intervals")
+        display = cis.assign(
+            estimate=lambda d: d["point_estimate"].map("{:.3f}".format),
+            ci=lambda d: d.apply(
+                lambda r: f"[{r['ci_low']:.3f}, {r['ci_high']:.3f}]", axis=1
+            ),
+        )[["metric", "estimate", "ci"]]
+        st.dataframe(display, width="stretch", hide_index=True)
+        st.caption(
+            "Wide intervals reflect the small hazardous sample (~26 cases) in the "
+            "lockbox split — a reason to treat single-point metrics cautiously."
+        )
+
+    if RELIABILITY_PATH.exists():
+        st.image(
+            str(RELIABILITY_PATH),
+            caption="Reliability diagram and calibrated score distribution (lockbox)",
+        )
 
 
 def main() -> None:

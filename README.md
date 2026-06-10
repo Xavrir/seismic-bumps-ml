@@ -55,6 +55,15 @@ We tested four strategies (default, class_weight_balanced, smote, smote_balanced
 ## Why Not Accuracy?
 A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy but would fail to detect any hazards. Our selected Logistic Regression model has lower accuracy (83%) but successfully identifies 57.7% of hazardous shifts. The F2 score specifically penalizes missed hazards more heavily than false alarms.
 
+This is confirmed by independent reproductions: on the same dataset, Random Forest, AdaBoost, XGBoost, and a neural net all reach ~0.93 accuracy while catching **0%** of hazards — they simply predict "never hazardous." Accuracy is a vanity metric here; recall/F2 are what matter.
+
+## Calibration & Cost Policy
+Two refinements make the demo's output honest and its threshold defensible (run via `scripts/build_final_model_bundle.py` + `scripts/evaluate_calibration.py`):
+
+- **Probability calibration.** `class_weight='balanced'` distorts `predict_proba`, so the raw score the app shows as "Risk score 0-100" did not mean a real probability. The bundle now wraps the model in `CalibratedClassifierCV` (isotonic), fit on the dev split only. This collapses calibration error dramatically (lockbox **ECE 0.319 → 0.012**, **Brier 0.180 → 0.057**) and even nudges precision up (0.12 → 0.17) at the same recall (0.577). Because calibrated probabilities track the true ~6.6% base rate, the operating threshold is re-derived on the calibrated scale (≈0.08) rather than the old uncalibrated 0.512.
+- **Cost-based threshold.** Instead of "whatever maximized F2," the operating point follows an explicit cost matrix — a missed hazard costs `10x` a false alarm — recorded in `final_policy.json` (`cost_matrix`, `cost_optimal_threshold`, `threshold_basis`). The F2 and cost-optimal thresholds are both surfaced so the choice is auditable.
+- **Honest uncertainty.** Lockbox metrics ship with bootstrap 95% CIs (e.g. recall `0.577 [0.381, 0.769]`) and a reliability diagram, reflecting the small hazardous sample (~26 cases). These do **not** raise recall/AUC — those sit at the dataset's ceiling — they make the displayed number trustworthy and the threshold explainable.
+
 ## Relevant Graphs
 
 ### 1) Final Policy Diagnostics

@@ -1,12 +1,14 @@
 {
-  "created_at_utc": "2026-03-15T06:43:22.678932+00:00",
+  "created_at_utc": "2026-06-01T13:34:56.078026+00:00",
   "selection_source": "artifacts/external_transfer_lockbox_summary.csv",
   "selection_scope": "dev-only repeated CV summary; lockbox used only as confirmatory snapshot",
   "selection_objective": "max dev-cv hazardous_f2 mean, tie by recall then auc",
   "model": "logreg",
   "variant": "baseline_lockbox",
-  "operating_threshold": 0.512,
-  "watch_floor": 0.3,
+  "operating_threshold": 0.08,
+  "f2_threshold": 0.512,
+  "threshold_basis": "f2",
+  "watch_floor": 0.04,
   "danger_rule": "dangerous if predicted_probability >= operating_threshold",
   "cv_metrics": {
     "f2_mean": 0.3967931973661481,
@@ -28,5 +30,14 @@
     "max_iter": 1000,
     "solver": "lbfgs",
     "external_prior": false
-  }
+  },
+  "calibrated_f2_threshold": 0.08,
+  "cost_matrix": {
+    "fn": 10.0,
+    "fp": 1.0,
+    "ratio": 10.0
+  },
+  "cost_optimal_threshold": 0.08,
+  "cost_optimal_expected_cost": 949.0,
+  "cost_selection_scope": "dev-only out-of-fold CALIBRATED scores (5-fold)"
 }

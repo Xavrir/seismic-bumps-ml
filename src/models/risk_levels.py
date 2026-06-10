@@ -22,6 +22,18 @@ def to_risk_level(
     threshold: float,
     watch_floor: float = 0.30,
 ) -> RiskLevel:
+    """Map a calibrated hazard probability to a formal risk band.
+
+    Bands (with calibrated probabilities, these read as real hazard frequencies):
+    - ``dangerous``: ``p >= threshold`` — the cost-policy operating point; treat
+      as an actionable hazard alert.
+    - ``watch``: ``watch_floor <= p < threshold`` — elevated but sub-threshold;
+      heightened monitoring, not yet an alert.
+    - ``low``: ``p < watch_floor`` — baseline conditions.
+
+    ``threshold`` comes from the frozen policy (F2- or cost-derived); the gap
+    between ``watch_floor`` and ``threshold`` sets the expected alert volume.
+    """
     p = float(probability)
     t = float(threshold)
     wf = float(watch_floor)

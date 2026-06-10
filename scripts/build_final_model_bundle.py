@@ -9,10 +9,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
+
+# Calibration: isotonic needs enough positives per CV fold to be stable;
+# below this dev-set hazardous count we fall back to Platt scaling (sigmoid).
+CALIBRATION_CV = 5
+ISOTONIC_MIN_POSITIVES = 50
 
 from src.data.load_arff import load_seismic_bumps
 from src.features.preprocess import BINARY_COLS, ORDINAL_COLS, build_pipeline
@@ -128,6 +134,25 @@ def _split_dev_and_lockbox() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.
     )
 
 
+def _calibrate_model(model, X_dev_proc, y_dev: pd.Series) -> tuple[object, str]:
+    """Wrap a fitted classifier in a calibrated estimator.
+
+    Calibration is fit on the dev split only (the lockbox stays untouched), so
+    the probabilities the app displays as a 0-100 risk score approximate real
+    hazard frequencies instead of the distorted scores that class_weight or
+    scale_pos_weight produce.
+    """
+    n_positives = int((y_dev == 1).sum())
+    method = "isotonic" if n_positives >= ISOTONIC_MIN_POSITIVES else "sigmoid"
+    calibrated = CalibratedClassifierCV(model, method=method, cv=CALIBRATION_CV)
+    calibrated.fit(X_dev_proc, y_dev)
+    print(
+        f"Calibration: method={method} "
+        f"(dev hazardous={n_positives}, cv={CALIBRATION_CV})"
+    )
+    return calibrated, method
+
+
 def _evaluate_lockbox(
     model,
     pipeline,
@@ -186,8 +211,9 @@ def main() -> None:
 
     pipeline = build_pipeline(model_type, numeric_cols=_numeric_cols(X_dev))
     X_dev_proc = pipeline.fit_transform(X_dev)
-    model = _build_classifier(model_name, params, y_dev)
-    model.fit(X_dev_proc, y_dev)
+    base_model = _build_classifier(model_name, params, y_dev)
+    base_model.fit(X_dev_proc, y_dev)
+    model, calibration_method = _calibrate_model(base_model, X_dev_proc, y_dev)
 
     lockbox_eval, lockbox_metrics = _evaluate_lockbox(
         model,
@@ -205,6 +231,8 @@ def main() -> None:
         "threshold": threshold,
         "watch_floor": watch_floor,
         "use_external_prior": False,
+        "calibrated": True,
+        "calibration_method": calibration_method,
         "pipeline": pipeline,
         "model": model,
     }
@@ -212,7 +240,7 @@ def main() -> None:
         pickle.dump(bundle, handle)
 
     print("=== FINAL MODEL BUNDLE BUILT ===")
-    print(f"Model={model_name} Variant={variant}")
+    print(f"Model={model_name} Variant={variant} Calibration={calibration_method}")
     print(f"Threshold={threshold:.3f}, WatchFloor={watch_floor:.2f}")
     print(
         "Lockbox metrics: recall={:.3f} precision={:.3f} F2={:.3f} AUC={:.3f}".format(

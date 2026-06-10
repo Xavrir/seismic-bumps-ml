@@ -15,6 +15,12 @@
 - Winner CV recall mean: `0.643` (std `0.145`)
 - Winner CV AUC mean: `0.756` (std `0.039`)
 
+## Cost-Based Operating Point
+
+- Cost matrix: miss (FN) = `10`, false alarm (FP) = `1` (ratio `10:1`)
+- Cost-optimal threshold (dev OOF): `0.080`
+- Active threshold basis: `f2` → operating threshold `0.080`
+
 ## Lockbox Snapshot (confirmatory only)
 
 - Lockbox recall: `0.577` | precision: `0.120` | F2: `0.328` | AUC: `0.735`
