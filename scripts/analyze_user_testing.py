@@ -57,6 +57,20 @@ TASK_LABELS = {
 }
 SUCCESS_MAP = {"selesai": 1.0, "sebagian": 0.5, "gagal": 0.0}
 
+# Fallback: match a raw Google Forms header by its question text (case-insensitive
+# substring) when the [code] prefix is missing (e.g. questions edited by hand).
+TEXT_FALLBACK = {
+    "major": ["program studi"],
+    "year": ["jenjang kuliah", "tahun / jenjang"],
+    "ml_fam": ["familiar kamu dengan machine learning"],
+    "dash_fam": ["aplikasi data", "dashboard"],
+    "device": ["perangkat yang dipakai"],
+    "q_confuse": ["paling membingungkan", "atau sulit? kenapa"],
+    "q_like": ["yang kamu sukai", "kamu sukai"],
+    "q_suggest": ["saran perbaikan"],
+    "q_clarity": ["output risiko sudah jelas", "jelas/mudah dipahami"],
+}
+
 # Brand palette on a light canvas (readable on any slide).
 C_BLUE, C_GREEN, C_ORANGE, C_RED, C_INK = "#2f93ff", "#2a9d4a", "#e08a00", "#e0382c", "#201d1d"
 
@@ -69,6 +83,10 @@ def _resolve(df: pd.DataFrame, code: str) -> pd.Series | None:
     for col in df.columns:
         if pat.search(str(col)):
             return df[col]
+    for needle in TEXT_FALLBACK.get(code, []):
+        for col in df.columns:
+            if needle.lower() in str(col).lower():
+                return df[col]
     return None
 
 

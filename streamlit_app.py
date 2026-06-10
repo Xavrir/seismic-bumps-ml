@@ -653,6 +653,35 @@ def inject_styles() -> None:
         .sr-tile.low .k { color: var(--sr-green); }
         .sr-tile.watch .k { color: var(--sr-orange); }
         .sr-tile.dangerous .k { color: var(--sr-red); }
+        .sr-tile.dangerous.alert {
+          border-color: var(--sr-red);
+          background: rgba(255, 69, 58, 0.10);
+          box-shadow: 0 0 0 1px var(--sr-red) inset;
+        }
+
+        .sr-alert-banner {
+          display: flex;
+          gap: 10px;
+          align-items: baseline;
+          border: 1px solid rgba(255, 69, 58, 0.45);
+          background: rgba(255, 69, 58, 0.10);
+          color: var(--sr-text);
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin: 2px 0 12px;
+          font-size: 0.88rem;
+        }
+        .sr-alert-banner::before {
+          content: "ALERT";
+          color: var(--sr-red);
+          font-size: 0.66rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          border: 1px solid rgba(255, 69, 58, 0.5);
+          border-radius: 4px;
+          padding: 2px 6px;
+          flex: none;
+        }
 
         .sr-alloc {
           display: flex;
@@ -685,10 +714,16 @@ def inject_styles() -> None:
         }
 
         @media (max-width: 820px) {
-          .sr-readout { grid-template-columns: 1fr; gap: 16px; }
+          .block-container { padding-top: 18px; padding-bottom: 36px; }
+          h1 { font-size: 1.8rem; }
+          .sr-frame { padding: 18px 16px; }
+          .sr-readout { grid-template-columns: 1fr; gap: 16px; padding: 18px 16px; }
           .sr-gauge { width: 128px; height: 128px; }
           .sr-gauge-val { font-size: 2.6rem; }
-          .sr-tiles { grid-template-columns: 1fr; }
+          .sr-verdict-text { font-size: 0.96rem; }
+          .sr-tiles { grid-template-columns: 1fr; gap: 8px; }
+          .sr-steps .sr-step { padding: 14px 16px; }
+          [data-testid="stMetric"] { padding: 10px 12px; }
         }
         </style>
         """,
@@ -734,10 +769,30 @@ def render_header(policy: dict) -> None:
         unsafe_allow_html=True,
     )
     metric_cols = st.columns(4)
-    metric_cols[0].metric("Lockbox recall", f"{lockbox['hazardous_recall']:.3f}")
-    metric_cols[1].metric("Lockbox F2", f"{lockbox['hazardous_f2']:.3f}")
-    metric_cols[2].metric("Lockbox AUC", f"{lockbox['roc_auc']:.3f}")
-    metric_cols[3].metric("Precision", f"{lockbox['hazardous_precision']:.3f}")
+    metric_cols[0].metric(
+        "Lockbox recall",
+        f"{lockbox['hazardous_recall']:.3f}",
+        help="Recall: share of truly hazardous shifts the model catches. "
+        "Higher means fewer missed hazards.",
+    )
+    metric_cols[1].metric(
+        "Lockbox F2",
+        f"{lockbox['hazardous_f2']:.3f}",
+        help="F2: a balanced score that weights recall about 2x precision — "
+        "right for a safety tool where misses cost more than false alarms.",
+    )
+    metric_cols[2].metric(
+        "Lockbox AUC",
+        f"{lockbox['roc_auc']:.3f}",
+        help="AUC: how well the model ranks hazardous above non-hazardous shifts "
+        "(0.5 = guessing, 1.0 = perfect).",
+    )
+    metric_cols[3].metric(
+        "Precision",
+        f"{lockbox['hazardous_precision']:.3f}",
+        help="Precision: of the shifts flagged dangerous, the share that were "
+        "truly hazardous.",
+    )
 
 
 def render_start_here() -> None:
@@ -878,11 +933,14 @@ def render_single_score(bundle: dict) -> None:
                 {risk_badge(level)}
                 <p class="sr-verdict-text">{verdict}</p>
                 <div class="sr-telemetry">
-                  <div class="sr-readout-field"><span class="k">probability</span>
+                  <div class="sr-readout-field" title="Calibrated probability that the next shift is hazardous (0 to 1).">
+                    <span class="k">probability</span>
                     <span class="v">{probability:.3f}</span></div>
-                  <div class="sr-readout-field"><span class="k">alert threshold</span>
+                  <div class="sr-readout-field" title="Alert threshold: at or above this probability a shift is flagged dangerous. Set from a 10:1 miss-to-false-alarm cost.">
+                    <span class="k">alert threshold</span>
                     <span class="v">{threshold:.3f}</span></div>
-                  <div class="sr-readout-field"><span class="k">dangerous flag</span>
+                  <div class="sr-readout-field" title="1 = flagged dangerous (probability is at or above the threshold), otherwise 0.">
+                    <span class="k">dangerous flag</span>
                     <span class="v">{flag}</span></div>
                 </div>
               </div>
@@ -906,7 +964,7 @@ def render_batch_score(bundle: dict) -> None:
     )
     st.markdown(
         """
-        1. Download the sample input CSV.
+        1. **Download the example CSV** below — it already has the right columns.
         2. Keep the header row exactly the same.
         3. Replace or add shift rows with your values.
         4. Upload the completed CSV here.
@@ -915,11 +973,13 @@ def render_batch_score(bundle: dict) -> None:
     )
     with DEFAULT_SAMPLE_INPUT_PATH.open("rb") as sample_file:
         st.download_button(
-            "Download sample input CSV",
+            "Download example CSV (template)",
             sample_file,
             file_name="seismic_sample_input.csv",
             mime="text/csv",
         )
+    st.caption("This is what a valid file looks like — keep these exact column names:")
+    st.dataframe(get_sample_input().head(2), width="stretch", hide_index=True)
 
     with st.expander("CSV schema", expanded=False):
         schema_rows = []
@@ -967,20 +1027,30 @@ def render_batch_score(bundle: dict) -> None:
 
     summary = prediction_summary(predictions)
     total = max(summary["low"] + summary["watch"] + summary["dangerous"], 1)
+    danger = summary["dangerous"]
+    danger_cls = "sr-tile dangerous alert" if danger else "sr-tile dangerous"
+    banner = (
+        f'<div class="sr-alert-banner">{danger} shift'
+        f'{"s" if danger != 1 else ""} flagged dangerous — review before the shift '
+        "starts.</div>"
+        if danger
+        else ""
+    )
     st.markdown(
         f"""
+        {banner}
         <div class="sr-tiles">
           <div class="sr-tile low"><div class="k">low</div>
             <div class="v">{summary["low"]}</div></div>
           <div class="sr-tile watch"><div class="k">watch</div>
             <div class="v">{summary["watch"]}</div></div>
-          <div class="sr-tile dangerous"><div class="k">dangerous</div>
-            <div class="v">{summary["dangerous"]}</div></div>
+          <div class="{danger_cls}"><div class="k">dangerous</div>
+            <div class="v">{danger}</div></div>
         </div>
         <div class="sr-alloc">
           <i class="low" style="width: {summary["low"] / total * 100:.1f}%"></i>
           <i class="watch" style="width: {summary["watch"] / total * 100:.1f}%"></i>
-          <i class="dangerous" style="width: {summary["dangerous"] / total * 100:.1f}%"></i>
+          <i class="dangerous" style="width: {danger / total * 100:.1f}%"></i>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1005,6 +1075,19 @@ def render_model_evidence(policy: dict) -> None:
         "F2, then checked once on the lockbox split. Recall and F2 are emphasized because "
         "missed hazardous shifts are worse than false alarms in this demo setting."
     )
+
+    with st.expander("What do these terms mean?"):
+        st.markdown(
+            """
+- **Risk score** — the hazard probability shown as 0–100.
+- **Threshold (0.080)** — at or above this, a shift is flagged **dangerous**.
+- **Watch floor (0.04)** — below this is **low**; between the two is **watch**.
+- **Recall** — share of truly hazardous shifts the model catches (a miss is the costly error).
+- **Precision** — of the shifts flagged dangerous, how many were truly hazardous.
+- **F2** — an accuracy score weighting recall about 2× precision (fits a safety tool).
+- **AUC** — how well the model ranks hazardous above non-hazardous (0.5 = guessing, 1.0 = perfect).
+            """
+        )
 
     cv = policy["cv_metrics"]
     lockbox = policy["lockbox_metrics"]
