@@ -7,6 +7,11 @@ dist/
 reports/figures/*.png
 artifacts/*.csv
 
+# Generated user-testing analysis outputs (regenerate from real responses)
+docs/user-testing/analysis_summary.md
+docs/user-testing/qualitative_responses.md
+reports/figures/user_testing/
+
 # Local AI design/tooling skill folders (impeccable et al.) - not app code
 .agents/
 .claude/
