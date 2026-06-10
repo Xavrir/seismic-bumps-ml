@@ -761,9 +761,6 @@ def render_header(policy: dict) -> None:
               watch floor<br><b>{policy["watch_floor"]:.2f}</b>
             </div>
           </div>
-          <div class="sr-disclaimer">
-            Research demo only. This is not certified operational mine-safety software.
-          </div>
         </div>
         """,
         unsafe_allow_html=True,
