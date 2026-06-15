@@ -1,4 +1,4 @@
-from src.models.risk_levels import to_danger_flag, to_risk_level, to_risk_score
+from risk_levels import to_danger_flag, to_risk_level, to_risk_score
 
 
 def test_to_risk_score_clamps_range():

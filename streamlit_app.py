@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from src.app.scoring import (
+from scoring import (
     CATEGORICAL_OPTIONS,
     DEFAULT_SAMPLE_INPUT_PATH,
     NUMERIC_COLUMNS,

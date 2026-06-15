@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import matplotlib
 
@@ -22,10 +22,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scripts.build_final_model_bundle import _split_dev_and_lockbox
-from src.app.scoring import load_model_bundle
-from src.models.risk_levels import to_risk_level
-from src.viz.console_theme import PALETTE, apply_console_theme
+from build_final_model_bundle import _split_dev_and_lockbox
+from scoring import load_model_bundle
+from risk_levels import to_risk_level
+from console_theme import PALETTE, apply_console_theme
 
 POLICY_JSON = Path("artifacts/final_policy/final_policy.json")
 FIGURES_DIR = Path("reports/figures")

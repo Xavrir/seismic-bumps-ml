@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.app.scoring import (
+from scoring import (
     PREDICTION_COLUMNS,
     ScoringInputError,
     load_model_bundle,
@@ -12,7 +12,7 @@ from src.app.scoring import (
     score_features,
     validate_features,
 )
-from src.models.risk_levels import to_risk_level
+from risk_levels import to_risk_level
 
 
 def test_score_sample_input_returns_prediction_columns():

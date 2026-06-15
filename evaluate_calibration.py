@@ -12,7 +12,7 @@ Run after scripts/build_final_model_bundle.py.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import matplotlib
 
@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import brier_score_loss
 
-from scripts.build_final_model_bundle import (
+from build_final_model_bundle import (
     MODEL_TO_TYPE,
     _build_classifier,
     _load_model_params,
@@ -31,10 +31,10 @@ from scripts.build_final_model_bundle import (
     _read_policy_fields,
     _split_dev_and_lockbox,
 )
-from src.app.scoring import load_model_bundle
-from src.features.preprocess import build_pipeline
-from src.models.metrics import compute_metrics
-from src.viz.console_theme import PALETTE, apply_console_theme
+from scoring import load_model_bundle
+from preprocess import build_pipeline
+from metrics import compute_metrics
+from console_theme import PALETTE, apply_console_theme
 
 RANDOM_STATE = 42
 N_BOOTSTRAP = 2000

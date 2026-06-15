@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.features.external_transfer import (
+from external_transfer import (
     add_external_prior_features,
     build_external_alignment_features,
     build_uci_alignment_features,

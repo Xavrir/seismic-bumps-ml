@@ -3,7 +3,7 @@
 import pytest
 import pandas as pd
 
-from src.data.load_arff import load_seismic_bumps
+from load_arff import load_seismic_bumps
 
 
 @pytest.fixture(scope="module")

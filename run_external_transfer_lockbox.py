@@ -3,7 +3,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import json
 
@@ -13,14 +13,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RepeatedStratifiedKFold, train_test_split
 from xgboost import XGBClassifier
 
-from src.data.load_arff import load_seismic_bumps
-from src.features.external_transfer import (
+from load_arff import load_seismic_bumps
+from external_transfer import (
     add_external_prior_features,
     build_external_alignment_features,
     fit_external_reference,
 )
-from src.features.preprocess import BINARY_COLS, ORDINAL_COLS, build_pipeline
-from src.models.metrics import compute_metrics, select_threshold
+from preprocess import BINARY_COLS, ORDINAL_COLS, build_pipeline
+from metrics import compute_metrics, select_threshold
 
 RANDOM_STATE = 42
 ARTIFACTS_DIR = Path("artifacts")

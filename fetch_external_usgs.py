@@ -3,11 +3,11 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import argparse
 
-from src.data.usgs_external import (
+from usgs_external import (
     aggregate_events_to_shift_windows,
     build_usgs_query_url,
     fetch_usgs_events_csv,

@@ -14,7 +14,7 @@ each imbalance strategy on the same model architecture.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import json
 
@@ -30,9 +30,9 @@ from sklearn.pipeline import Pipeline as SkPipeline
 from imblearn.pipeline import Pipeline as ImbPipeline
 from imblearn.over_sampling import SMOTE
 
-from src.data.splits import make_splits
-from src.features.preprocess import build_pipeline
-from src.models.metrics import compute_metrics, select_threshold
+from splits import make_splits
+from preprocess import build_pipeline
+from metrics import compute_metrics, select_threshold
 
 RANDOM_STATE = 42
 ARTIFACTS_DIR = Path("artifacts")

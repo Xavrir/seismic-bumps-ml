@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from scripts.finalize_lockbox_policy import _select_cost_threshold, COST_FN, COST_FP
-from src.app.scoring import DEFAULT_BUNDLE_PATH, load_model_bundle
+from finalize_lockbox_policy import _select_cost_threshold, COST_FN, COST_FP
+from scoring import DEFAULT_BUNDLE_PATH, load_model_bundle
 
 POLICY_PATH = Path("artifacts/final_policy/final_policy.json")
 

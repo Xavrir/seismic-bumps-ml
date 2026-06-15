@@ -58,7 +58,7 @@ A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy 
 This is confirmed by independent reproductions: on the same dataset, Random Forest, AdaBoost, XGBoost, and a neural net all reach ~0.93 accuracy while catching **0%** of hazards — they simply predict "never hazardous." Accuracy is a vanity metric here; recall/F2 are what matter.
 
 ## Calibration & Cost Policy
-Two refinements make the demo's output honest and its threshold defensible (run via `scripts/build_final_model_bundle.py` + `scripts/evaluate_calibration.py`):
+Two refinements make the demo's output honest and its threshold defensible (run via `build_final_model_bundle.py` + `evaluate_calibration.py`):
 
 - **Probability calibration.** `class_weight='balanced'` distorts `predict_proba`, so the raw score the app shows as "Risk score 0-100" did not mean a real probability. The bundle now wraps the model in `CalibratedClassifierCV` (isotonic), fit on the dev split only. This collapses calibration error dramatically (lockbox **ECE 0.319 → 0.012**, **Brier 0.180 → 0.057**) and even nudges precision up (0.12 → 0.17) at the same recall (0.577). Because calibrated probabilities track the true ~6.6% base rate, the operating threshold is re-derived on the calibrated scale (≈0.08) rather than the old uncalibrated 0.512.
 - **Cost-based threshold.** Instead of "whatever maximized F2," the operating point follows an explicit cost matrix — a missed hazard costs `10x` a false alarm — recorded in `final_policy.json` (`cost_matrix`, `cost_optimal_threshold`, `threshold_basis`). The F2 and cost-optimal thresholds are both surfaced so the choice is auditable.
@@ -122,38 +122,49 @@ persistent process (Render, Railway, Fly.io, Hugging Face Spaces).
 ## Notebook (recommended starting point)
 For a single, readable walkthrough of the whole study — data, EDA, preprocessing, the
 four-model comparison, imbalance handling, calibration, and the final cost-based policy —
-open the analysis notebook. It narrates each step in plain language and reuses the `src/`
+open the analysis notebook. It narrates each step in plain language and reuses the project
 code, so it runs top to bottom with no manual setup (the dataset ships under `data/raw/`):
 
 ```bash
 pip install -r requirements-dev.txt
-jupyter lab notebooks/seismic_bumps_analysis.ipynb     # or: jupyter notebook ...
+jupyter lab seismic_bumps_analysis.ipynb     # or: jupyter notebook ...
 ```
 
 To re-execute it headlessly (e.g. to refresh the saved outputs):
 
 ```bash
-jupyter nbconvert --to notebook --execute --inplace notebooks/seismic_bumps_analysis.ipynb
+jupyter nbconvert --to notebook --execute --inplace seismic_bumps_analysis.ipynb
 ```
 
 ## Reproducing
 Install the dev dependencies first (`pip install -r requirements-dev.txt`), then run the full pipeline:
 ```bash
 # Run Exploratory Data Analysis
-python3 scripts/run_eda.py
+python3 run_eda.py
 
 # Train baseline Logistic Regression
-python3 scripts/train_logreg_baseline.py
+python3 train_logreg_baseline.py
 
 # Train and evaluate all models
-python3 scripts/train_all_models.py
+python3 train_all_models.py
 
 # Run imbalance strategy experiments
-python3 scripts/run_imbalance_experiments.py
+python3 run_imbalance_experiments.py
 ```
 
 ## Project Structure
-- `artifacts/`: CSV files with metrics and experiment results.
-- `docs/`: Conceptual documentation and diagrams.
-- `scripts/`: Python scripts for running the pipeline.
-- `src/`: Modular code for loading, preprocessing, splitting, and training.
+The code is kept flat at the repository root for easy navigation:
+
+- `seismic_bumps_analysis.ipynb`: the narrated end-to-end analysis (start here).
+- `streamlit_app.py`: the interactive demo app.
+- Helper modules: `load_arff.py`, `splits.py`, `preprocess.py`, `metrics.py`,
+  `risk_levels.py`, `scoring.py`, `usgs_external.py`, `external_transfer.py`,
+  `console_theme.py`.
+- Pipeline scripts: `run_eda.py`, `train_logreg_baseline.py`, `train_all_models.py`,
+  `run_imbalance_experiments.py`, `evaluate_calibration.py`,
+  `build_final_model_bundle.py`, and related experiment/utility scripts.
+- Tests: `test_*.py` (run with `pytest`).
+- `data/`: the bundled raw dataset (`data/raw/seismic-bumps.arff`).
+- `artifacts/`: saved metrics, experiment results, and the frozen model bundle.
+- `docs/`: conceptual documentation, user-testing material, and the demo CSV.
+- `reports/figures/`: generated diagnostic figures.
