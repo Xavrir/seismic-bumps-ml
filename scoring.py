@@ -9,9 +9,9 @@ from typing import BinaryIO
 
 import pandas as pd
 
-from src.models.risk_levels import to_danger_flag, to_risk_level, to_risk_score
+from risk_levels import to_danger_flag, to_risk_level, to_risk_score
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parent
 FINAL_POLICY_DIR = PROJECT_ROOT / "artifacts" / "final_policy"
 DEFAULT_BUNDLE_PATH = FINAL_POLICY_DIR / "model_bundle.pkl"
 DEFAULT_SAMPLE_INPUT_PATH = FINAL_POLICY_DIR / "sample_input.csv"

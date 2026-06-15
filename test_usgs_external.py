@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.data.usgs_external import (
+from usgs_external import (
     aggregate_events_to_shift_windows,
     build_usgs_query_url,
     magnitude_to_energy_proxy,

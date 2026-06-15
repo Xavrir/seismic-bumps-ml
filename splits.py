@@ -13,7 +13,7 @@ from typing import Dict, Tuple
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from src.data.load_arff import load_seismic_bumps, ARFF_PATH
+from load_arff import load_seismic_bumps, ARFF_PATH
 
 RANDOM_STATE = 42
 TARGET_COL = "class"

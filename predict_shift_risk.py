@@ -5,11 +5,11 @@ import pickle
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pandas as pd
 
-from src.models.risk_levels import to_danger_flag, to_risk_level, to_risk_score
+from risk_levels import to_danger_flag, to_risk_level, to_risk_score
 
 
 def _parse_args() -> argparse.Namespace:

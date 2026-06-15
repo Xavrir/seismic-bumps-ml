@@ -5,7 +5,7 @@ import pickle
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np
 import pandas as pd
@@ -20,10 +20,10 @@ from xgboost import XGBClassifier
 CALIBRATION_CV = 5
 ISOTONIC_MIN_POSITIVES = 50
 
-from src.data.load_arff import load_seismic_bumps
-from src.features.preprocess import BINARY_COLS, ORDINAL_COLS, build_pipeline
-from src.models.metrics import compute_metrics
-from src.models.risk_levels import to_danger_flag, to_risk_level, to_risk_score
+from load_arff import load_seismic_bumps
+from preprocess import BINARY_COLS, ORDINAL_COLS, build_pipeline
+from metrics import compute_metrics
+from risk_levels import to_danger_flag, to_risk_level, to_risk_score
 
 RANDOM_STATE = 42
 

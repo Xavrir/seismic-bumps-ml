@@ -12,7 +12,7 @@ Run from the project root:
 import sys
 from pathlib import Path
 
-# Allow imports from project root (e.g. `from src.data.load_arff import ...`)
+# Allow imports from project root (e.g. `from load_arff import ...`)
 sys.path.insert(0, ".")
 
 # Use non-interactive backend BEFORE importing pyplot — no display available
@@ -25,7 +25,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
-from src.data.load_arff import load_seismic_bumps
+from load_arff import load_seismic_bumps
 
 # ---------------------------------------------------------------------------
 # ENCODING DECISION: seismic/seismoacoustic/ghazard use ordinal encoding

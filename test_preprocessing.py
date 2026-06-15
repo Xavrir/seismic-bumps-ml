@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data.splits import make_splits
-from src.features.preprocess import build_pipeline, ORDINAL_COLS, BINARY_COLS
-from src.models.metrics import compute_metrics
+from splits import make_splits
+from preprocess import build_pipeline, ORDINAL_COLS, BINARY_COLS
+from metrics import compute_metrics
 
 TOTAL_ROWS = 2584
 

@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import numpy as np
 import pandas as pd
@@ -85,7 +85,7 @@ def _dev_oof_scores(model_name: str, variant: str, policy_params: dict | None):
     from sklearn.model_selection import StratifiedKFold, cross_val_predict
     from sklearn.pipeline import Pipeline
 
-    from scripts.build_final_model_bundle import (
+    from build_final_model_bundle import (
         CALIBRATION_CV,
         ISOTONIC_MIN_POSITIVES,
         MODEL_TO_TYPE,
@@ -94,7 +94,7 @@ def _dev_oof_scores(model_name: str, variant: str, policy_params: dict | None):
         _split_dev_and_lockbox,
     )
     from sklearn.calibration import CalibratedClassifierCV
-    from src.features.preprocess import build_pipeline
+    from preprocess import build_pipeline
 
     X_dev, _, y_dev, _ = _split_dev_and_lockbox()
     model_type = MODEL_TO_TYPE[model_name]
@@ -136,7 +136,7 @@ def _select_cost_threshold(y_true: np.ndarray, y_score: np.ndarray) -> tuple[flo
 def _compute_cost_threshold(winner: pd.Series, policy: dict) -> dict | None:
     """Derive calibrated F2 and cost-optimal thresholds; None if stack absent."""
     try:
-        from src.models.metrics import select_threshold
+        from metrics import select_threshold
 
         y_true, y_score = _dev_oof_scores(
             str(winner["model"]), str(winner["variant"]), policy.get("hyperparams")

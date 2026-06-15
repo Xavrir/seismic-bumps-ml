@@ -18,14 +18,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.app.scoring import (
+from scoring import (
     load_model_bundle,
     load_required_columns,
     score_features,
 )
-from src.data.load_arff import load_seismic_bumps
+from load_arff import load_seismic_bumps
 
-OUTPUT_PATH = Path(__file__).resolve().parents[1] / "docs" / "demo" / "seismic_demo_shifts.csv"
+OUTPUT_PATH = Path(__file__).resolve().parent / "docs" / "demo" / "seismic_demo_shifts.csv"
 
 # How many rows to show for each risk level in the demo file.
 WANT = {"low": 5, "watch": 2, "dangerous": 2}

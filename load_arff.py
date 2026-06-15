@@ -6,7 +6,7 @@ import pandas as pd
 
 # Resolve the dataset relative to the repository root so the project runs anywhere
 # (notebook, scripts, tests) without depending on a machine-specific download path.
-ARFF_PATH = Path(__file__).resolve().parents[2] / "data" / "raw" / "seismic-bumps.arff"
+ARFF_PATH = Path(__file__).resolve().parent / "data" / "raw" / "seismic-bumps.arff"
 
 
 def load_seismic_bumps(path: Path = ARFF_PATH) -> pd.DataFrame:
