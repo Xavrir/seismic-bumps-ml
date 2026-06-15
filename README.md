@@ -140,30 +140,30 @@ jupyter nbconvert --to notebook --execute --inplace seismic_bumps_analysis.ipynb
 Install the dev dependencies first (`pip install -r requirements-dev.txt`), then run the full pipeline:
 ```bash
 # Run Exploratory Data Analysis
-python3 run_eda.py
+python3 scripts/run_eda.py
 
 # Train baseline Logistic Regression
-python3 train_logreg_baseline.py
+python3 scripts/train_logreg_baseline.py
 
 # Train and evaluate all models
-python3 train_all_models.py
+python3 scripts/train_all_models.py
 
 # Run imbalance strategy experiments
-python3 run_imbalance_experiments.py
+python3 scripts/run_imbalance_experiments.py
 ```
 
 ## Project Structure
-The code is kept flat at the repository root for easy navigation:
+The root holds the things you actually open; supporting code is grouped into two folders.
 
 - `seismic_bumps_analysis.ipynb`: the narrated end-to-end analysis (start here).
 - `streamlit_app.py`: the interactive demo app.
-- Helper modules: `load_arff.py`, `splits.py`, `preprocess.py`, `metrics.py`,
-  `risk_levels.py`, `scoring.py`, `usgs_external.py`, `external_transfer.py`,
-  `console_theme.py`.
-- Pipeline scripts: `run_eda.py`, `train_logreg_baseline.py`, `train_all_models.py`,
-  `run_imbalance_experiments.py`, `evaluate_calibration.py`,
-  `build_final_model_bundle.py`, and related experiment/utility scripts.
-- Tests: `test_*.py` (run with `pytest`).
+- Helper modules (imported by the notebook and app): `load_arff.py`, `splits.py`,
+  `preprocess.py`, `metrics.py`, `risk_levels.py`, `scoring.py`, `usgs_external.py`,
+  `external_transfer.py`, `console_theme.py`.
+- `scripts/`: one-off pipeline/experiment scripts (`run_eda.py`,
+  `train_logreg_baseline.py`, `train_all_models.py`, `evaluate_calibration.py`,
+  `build_final_model_bundle.py`, …) that generated the saved artifacts.
+- `tests/`: the test suite (run with `pytest`).
 - `data/`: the bundled raw dataset (`data/raw/seismic-bumps.arff`).
 - `artifacts/`: saved metrics, experiment results, and the frozen model bundle.
 - `docs/`: conceptual documentation, user-testing material, and the demo CSV.
