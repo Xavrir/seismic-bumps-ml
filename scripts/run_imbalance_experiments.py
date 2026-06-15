@@ -14,7 +14,7 @@ each imbalance strategy on the same model architecture.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import json
 

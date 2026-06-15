@@ -25,7 +25,7 @@ from scoring import (
 )
 from load_arff import load_seismic_bumps
 
-OUTPUT_PATH = Path(__file__).resolve().parent / "docs" / "demo" / "seismic_demo_shifts.csv"
+OUTPUT_PATH = Path(__file__).resolve().parent.parent / "docs" / "demo" / "seismic_demo_shifts.csv"
 
 # How many rows to show for each risk level in the demo file.
 WANT = {"low": 5, "watch": 2, "dangerous": 2}
