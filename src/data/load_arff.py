@@ -4,7 +4,9 @@ from pathlib import Path
 from scipy.io import arff
 import pandas as pd
 
-ARFF_PATH = Path("/home/xavrir/Downloads/seismic+bumps/seismic-bumps.arff")
+# Resolve the dataset relative to the repository root so the project runs anywhere
+# (notebook, scripts, tests) without depending on a machine-specific download path.
+ARFF_PATH = Path(__file__).resolve().parents[2] / "data" / "raw" / "seismic-bumps.arff"
 
 
 def load_seismic_bumps(path: Path = ARFF_PATH) -> pd.DataFrame:

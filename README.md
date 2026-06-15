@@ -119,6 +119,23 @@ Streamlit is a long-running Python server, so it is **not** a fit for static or 
 hosts like Vercel/Netlify. Use Streamlit Community Cloud (above) or any host that runs a
 persistent process (Render, Railway, Fly.io, Hugging Face Spaces).
 
+## Notebook (recommended starting point)
+For a single, readable walkthrough of the whole study — data, EDA, preprocessing, the
+four-model comparison, imbalance handling, calibration, and the final cost-based policy —
+open the analysis notebook. It narrates each step in plain language and reuses the `src/`
+code, so it runs top to bottom with no manual setup (the dataset ships under `data/raw/`):
+
+```bash
+pip install -r requirements-dev.txt
+jupyter lab notebooks/seismic_bumps_analysis.ipynb     # or: jupyter notebook ...
+```
+
+To re-execute it headlessly (e.g. to refresh the saved outputs):
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace notebooks/seismic_bumps_analysis.ipynb
+```
+
 ## Reproducing
 Install the dev dependencies first (`pip install -r requirements-dev.txt`), then run the full pipeline:
 ```bash
