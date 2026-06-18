@@ -85,7 +85,6 @@ NUMERIC_GROUPS = (
     ("Current shift energy", ("energy", "maxenergy")),
 )
 
-
 st.set_page_config(
     page_title="Seismic Risk Console",
     page_icon=":material/earthquake:",
@@ -93,16 +92,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-
 @st.cache_resource(show_spinner=False)
 def get_bundle() -> dict:
     return load_model_bundle()
 
-
 @st.cache_data(show_spinner=False)
 def get_policy() -> dict:
     return json.loads(POLICY_PATH.read_text(encoding="utf-8"))
-
 
 @st.cache_data(show_spinner=False)
 def get_metric_cis() -> pd.DataFrame | None:
@@ -110,23 +106,19 @@ def get_metric_cis() -> pd.DataFrame | None:
         return None
     return pd.read_csv(METRIC_CIS_PATH)
 
-
 @st.cache_data(show_spinner=False)
 def get_calibration_summary() -> pd.DataFrame | None:
     if not CALIBRATION_SUMMARY_PATH.exists():
         return None
     return pd.read_csv(CALIBRATION_SUMMARY_PATH)
 
-
 @st.cache_data(show_spinner=False)
 def get_sample_input() -> pd.DataFrame:
     return load_sample_input()
 
-
 @st.cache_data(show_spinner=False)
 def get_required_columns() -> list[str]:
     return load_required_columns()
-
 
 def inject_styles() -> None:
     st.markdown(
@@ -730,7 +722,6 @@ def inject_styles() -> None:
         unsafe_allow_html=True,
     )
 
-
 def risk_badge(level: str) -> str:
     safe_level = str(level).lower()
     css_class = {
@@ -739,7 +730,6 @@ def risk_badge(level: str) -> str:
         "dangerous": "sr-dangerous",
     }.get(safe_level, "sr-label")
     return f'<span class="{css_class}">{safe_level}</span>'
-
 
 def render_header(policy: dict) -> None:
     lockbox = policy["lockbox_metrics"]
@@ -791,7 +781,6 @@ def render_header(policy: dict) -> None:
         "truly hazardous.",
     )
 
-
 def render_start_here() -> None:
     st.markdown(
         """
@@ -819,7 +808,6 @@ def render_start_here() -> None:
         unsafe_allow_html=True,
     )
 
-
 def select_sample_row(samples: pd.DataFrame) -> tuple[int, pd.Series]:
     selected_index = st.selectbox(
         "Example row",
@@ -828,7 +816,6 @@ def select_sample_row(samples: pd.DataFrame) -> tuple[int, pd.Series]:
         help="Pick a bundled sample row, then adjust any fields below.",
     )
     return selected_index, samples.iloc[selected_index]
-
 
 def build_manual_feature_row(sample: pd.Series, sample_index: int) -> pd.DataFrame:
     st.markdown("##### Monitoring inputs")
@@ -867,7 +854,6 @@ def build_manual_feature_row(sample: pd.Series, sample_index: int) -> pd.DataFra
     row = {**categorical_values, **numeric_values}
     ordered_row = {column: row[column] for column in get_required_columns()}
     return pd.DataFrame([ordered_row])
-
 
 def render_single_score(bundle: dict) -> None:
     st.caption(
@@ -951,7 +937,6 @@ def render_single_score(bundle: dict) -> None:
                 width="stretch",
                 hide_index=True,
             )
-
 
 def render_batch_score(bundle: dict) -> None:
     st.subheader("Batch score CSV")
@@ -1064,7 +1049,6 @@ def render_batch_score(bundle: dict) -> None:
         mime="text/csv",
     )
 
-
 def render_model_evidence(policy: dict) -> None:
     st.subheader("Model evidence")
     st.write(
@@ -1113,7 +1097,6 @@ def render_model_evidence(policy: dict) -> None:
         image_cols[0].image(str(DIAGNOSTICS_PATH), caption="Final policy diagnostics")
     if TREND_PATH.exists():
         image_cols[1].image(str(TREND_PATH), caption="Risk-level trend")
-
 
 def render_methodology(policy: dict) -> None:
     st.subheader("Methodology")
@@ -1188,7 +1171,6 @@ def render_methodology(policy: dict) -> None:
             caption="Reliability diagram and calibrated score distribution (lockbox)",
         )
 
-
 def main() -> None:
     inject_styles()
     policy = get_policy()
@@ -1207,7 +1189,6 @@ def main() -> None:
         render_model_evidence(policy)
     with methodology_tab:
         render_methodology(policy)
-
 
 if __name__ == "__main__":
     main()

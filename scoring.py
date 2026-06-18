@@ -47,10 +47,8 @@ PREDICTION_COLUMNS = (
     "dangerous_flag",
 )
 
-
 class ScoringInputError(ValueError):
     """Raised when uploaded or entered scoring data cannot be scored."""
-
 
 def load_required_columns(sample_path: Path = DEFAULT_SAMPLE_INPUT_PATH) -> list[str]:
     """Read the canonical feature order from the bundled sample CSV."""
@@ -58,13 +56,11 @@ def load_required_columns(sample_path: Path = DEFAULT_SAMPLE_INPUT_PATH) -> list
         raise FileNotFoundError(f"Missing sample input file: {sample_path}")
     return list(pd.read_csv(sample_path, nrows=0).columns)
 
-
 def load_sample_input(sample_path: Path = DEFAULT_SAMPLE_INPUT_PATH) -> pd.DataFrame:
     """Load the bundled sample rows used by the UI and tests."""
     if not sample_path.exists():
         raise FileNotFoundError(f"Missing sample input file: {sample_path}")
     return pd.read_csv(sample_path)
-
 
 def load_model_bundle(bundle_path: Path = DEFAULT_BUNDLE_PATH) -> dict:
     """Load the frozen sklearn bundle."""
@@ -73,16 +69,14 @@ def load_model_bundle(bundle_path: Path = DEFAULT_BUNDLE_PATH) -> dict:
     with bundle_path.open("rb") as handle:
         return pickle.load(handle)
 
-
 def read_csv_input(source: bytes | BinaryIO) -> pd.DataFrame:
     """Parse uploaded CSV bytes into a DataFrame with a user-facing error."""
     try:
         if isinstance(source, bytes):
             return pd.read_csv(BytesIO(source))
         return pd.read_csv(source)
-    except Exception as exc:  # pandas raises several parser-specific errors
+    except Exception as exc:
         raise ScoringInputError(f"Could not read CSV input: {exc}") from exc
-
 
 def validate_features(
     features: pd.DataFrame,
@@ -132,7 +126,6 @@ def validate_features(
 
     return normalized
 
-
 def score_features(features: pd.DataFrame, bundle: dict) -> pd.DataFrame:
     """Score shift rows and append probability, score, level, and flag columns."""
     threshold = float(bundle["threshold"])
@@ -160,7 +153,6 @@ def score_features(features: pd.DataFrame, bundle: dict) -> pd.DataFrame:
         for probability in probabilities
     ]
     return output
-
 
 def prediction_summary(predictions: pd.DataFrame) -> dict[str, int]:
     """Return counts by risk level for concise UI summaries."""
