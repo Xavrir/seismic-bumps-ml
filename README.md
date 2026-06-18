@@ -1,4 +1,4 @@
-# Seismic Bumps — Hazard Classification
+# Seismic Bumps: Hazard Classification
 
 ## Problem
 This project focuses on coal mine seismic hazard classification using machine learning. The goal is to predict whether the next 8-hour shift will be hazardous based on seismic and seismoacoustic activity.
@@ -55,15 +55,15 @@ We tested four strategies (default, class_weight_balanced, smote, smote_balanced
 ## Why Not Accuracy?
 A dummy model predicting all non-hazardous shifts would achieve ~93.4% accuracy but would fail to detect any hazards. Our selected Logistic Regression model has lower accuracy (83%) but successfully identifies 57.7% of hazardous shifts. The F2 score specifically penalizes missed hazards more heavily than false alarms.
 
-This is confirmed by independent reproductions: on the same dataset, Random Forest, AdaBoost, XGBoost, and a neural net all reach ~0.93 accuracy while catching **0%** of hazards — they simply predict "never hazardous." Accuracy is a vanity metric here; recall/F2 are what matter.
+This is confirmed by independent reproductions: on the same dataset, Random Forest, AdaBoost, XGBoost, and a neural net all reach ~0.93 accuracy while catching **0%** of hazards, since they simply predict "never hazardous." Accuracy is a vanity metric here; recall/F2 are what matter.
 
 ## Calibration & Cost Policy
 Two refinements make the demo's output honest and its threshold defensible (the calibration and
 final-policy sections of the notebook walk through both):
 
 - **Probability calibration.** `class_weight='balanced'` distorts `predict_proba`, so the raw score the app shows as "Risk score 0-100" did not mean a real probability. The bundle now wraps the model in `CalibratedClassifierCV` (isotonic), fit on the dev split only. This collapses calibration error dramatically (lockbox **ECE 0.319 → 0.012**, **Brier 0.180 → 0.057**) and even nudges precision up (0.12 → 0.17) at the same recall (0.577). Because calibrated probabilities track the true ~6.6% base rate, the operating threshold is re-derived on the calibrated scale (≈0.08) rather than the old uncalibrated 0.512.
-- **Cost-based threshold.** Instead of "whatever maximized F2," the operating point follows an explicit cost matrix — a missed hazard costs `10x` a false alarm — recorded in `final_policy.json` (`cost_matrix`, `cost_optimal_threshold`, `threshold_basis`). The F2 and cost-optimal thresholds are both surfaced so the choice is auditable.
-- **Honest uncertainty.** Lockbox metrics ship with bootstrap 95% CIs (e.g. recall `0.577 [0.381, 0.769]`) and a reliability diagram, reflecting the small hazardous sample (~26 cases). These do **not** raise recall/AUC — those sit at the dataset's ceiling — they make the displayed number trustworthy and the threshold explainable.
+- **Cost-based threshold.** Instead of "whatever maximized F2," the operating point follows an explicit cost matrix (a missed hazard costs `10x` a false alarm) recorded in `final_policy.json` (`cost_matrix`, `cost_optimal_threshold`, `threshold_basis`). The F2 and cost-optimal thresholds are both surfaced so the choice is auditable.
+- **Honest uncertainty.** Lockbox metrics ship with bootstrap 95% CIs (e.g. recall `0.577 [0.381, 0.769]`) and a reliability diagram, reflecting the small hazardous sample (~26 cases). These do **not** raise recall/AUC (those sit at the dataset's ceiling); they make the displayed number trustworthy and the threshold explainable.
 
 ## Relevant Graphs
 
@@ -104,7 +104,7 @@ streamlit run streamlit_app.py
 `requirements.txt` is the lean runtime set (Streamlit, pandas, numpy, scikit-learn).
 The frozen model bundle is pure scikit-learn, so the demo needs nothing heavier.
 
-For training, evaluation, and tests, also install the dev tooling:
+To train the models or re-run the analysis yourself, also install the dev tooling:
 
 ```bash
 pip install -r requirements-dev.txt   # includes requirements.txt + xgboost, matplotlib, etc.
@@ -121,10 +121,11 @@ hosts like Vercel/Netlify. Use Streamlit Community Cloud (above) or any host tha
 persistent process (Render, Railway, Fly.io, Hugging Face Spaces).
 
 ## Notebook (recommended starting point)
-For a single, readable walkthrough of the whole study — data, EDA, preprocessing, the
-four-model comparison, imbalance handling, calibration, and the final cost-based policy —
-open the analysis notebook. It narrates each step in plain language and reuses the project
-code, so it runs top to bottom with no manual setup (the dataset ships under `data/raw/`):
+For a single, readable walkthrough of the whole study (data, EDA, preprocessing, the
+four-model comparison, imbalance handling, calibration, and the final cost-based policy),
+open the analysis notebook. It explains each step in plain language and defines every
+helper it uses inline, so it runs top to bottom with no manual setup (the dataset ships
+under `data/raw/`):
 
 ```bash
 pip install -r requirements-dev.txt
@@ -137,7 +138,7 @@ To re-execute it headlessly (e.g. to refresh the saved outputs):
 jupyter nbconvert --to notebook --execute --inplace seismic_bumps_analysis.ipynb
 ```
 
-The notebook is fully self-contained — it defines every helper it uses (data loading,
+The notebook is fully self-contained. It defines every helper it uses (data loading,
 splitting, preprocessing, metrics) inline, reads the bundled dataset from `data/raw/`, and
 trains the models live, so it reproduces the reported results top to bottom with no extra setup.
 
